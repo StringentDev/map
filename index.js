@@ -14,4 +14,17 @@ console.log(`
 [0m
 `)
 
-console.log(``)
+revision = require('child_process')
+  .execSync('git rev-parse HEAD')
+  .toString().trim()
+
+console.log(`
+Map Discord Bot
+Commit ${revision}
+`)
+
+console.log(" - Deploying commands")
+require("./appdata/deploy.js")
+
+console.log(" - Bootstrapping")
+require("./appdata/app.js")
