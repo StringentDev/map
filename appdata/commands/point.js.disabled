@@ -1,0 +1,158 @@
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+
+const spawner  = require('child_process').execSync
+const time     = require('humanize-time')
+const icons    = require("../emojis.js")
+const backup   = require("discord-backup");
+backup.setStorageFolder("./backups/");
+
+const options  = {
+	maxMessagesPerChannel: 500,
+	jsonSave: true,
+	jsonBeautify: true
+}
+
+module.exports = {
+	data: new SlashCommandBuilder()
+		.setName('point')
+		.setDescription('Get information for different users')
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('query')
+				.setDescription('List all recent backups')
+				.addUserOption(option => option.setName('target').setDescription('The user')))
+		.addSubcommand(subcommand =>
+				subcommand
+					.setName('restore')
+					.setDescription('Restore a point in time')
+					.addUserOption(option => option.setName('target').setDescription('The user')))
+		.addSubcommand(subcommand =>
+				subcommand
+					.setName('create')
+					.setDescription('Create a new server restore point')
+					.addUserOption(option => option.setName('target').setDescription('The user'))),
+	
+	async execute(interaction, client, rev) {
+		let embedded = new MessageEmbed()
+			.setTitle(`Creating`)
+			.setDescription(
+				` ${icons.loader} Waiting for confirmation`
+			)
+			.setFooter({ text: `Commit ${rev}`})
+			.setTimestamp()
+
+		let row = new MessageActionRow()
+		.addComponents(
+			new MessageButton()
+				.setCustomId('confirm')
+				.setLabel('Confirm')
+				.setEmoji('992104987788320899')
+				.setStyle('SECONDARY'),
+			new MessageButton()
+				.setCustomId('cancel')
+				.setLabel('Cancel')
+				.setEmoji('992104992397865020')
+				.setStyle('SECONDARY'),
+		);
+		// const Sent = await interaction.reply(
+		// 	{ content: 'Pinging...', fetchReply: true }
+		// );
+		interaction.reply(
+			{ 
+				embeds: [embedded],
+				ephemeral: process.env.production,
+				components: [row]
+			}
+		)
+
+		const collector = interaction.channel.createMessageComponentCollector({ time: 15000 });
+	
+		collector.on('collect', async i => {
+			console.log(i.customId)
+			// row.components = []
+			for (let key of row.components) {
+				key.disabled = true
+			}
+			if (i.customId == 'confirm') {
+				if (interaction.options.getSubcommand() === 'query') {
+				
+				} else if (interaction.options.getSubcommand() === 'restore') {
+					
+				} else if (interaction.options.getSubcommand() === 'create') {
+				}
+				let embedded = new MessageEmbed()
+					.setTitle(` ${icons.floppy_drive} Here we go!`)
+					.setDescription(
+						`Please wait whilst the backup is being generated `+
+						`as this can take up to 10 seconds for everthing `+
+						`to be saved.\n\n` +
+						`Once this backup has been made, You will be given `+
+						`a code. You can also see this code in the query `+
+						`subcommand.`
+					)
+					.setFooter({ text: `Commit ${rev}`})
+					.setTimestamp()
+				await interaction.editReply(
+					{
+						embeds: [embedded],
+						ephemeral: process.env.production,
+						components: [row]
+					}
+				)
+				backup.create(interaction.guild.id, options).then(async (data) => {
+				  // console.log(backupData.id); // NSJH2
+					let embedded = new MessageEmbed()
+						.setTitle(` ${icons.checkmark} All good!`)
+						.setDescription(
+							`A full backup has been created for your server `+
+							`for use in recovering what you have _now_ at a `+
+							`Later date. \n\n` +
+							`The code for this backup is \`${backupData.id}\` `
+						)
+						.setFooter({ text: `Commit ${rev}`})
+						.setTimestamp()
+					await interaction.editReply(
+						{
+							embeds: [embedded],
+							ephemeral: process.env.production,
+							components: [row]
+						}
+					)
+				}).catch(async () => {
+					let embedded = new MessageEmbed()
+						.setTitle(` ${icons.cross} All good!`)
+						.setDescription(
+							`A full backup was not created for your server `+
+							`as the bot has run into an error. `
+						)
+						.setFooter({ text: `Commit ${rev}`})
+						.setTimestamp()
+					await interaction.editReply(
+						{
+							embeds: [embedded],
+							ephemeral: process.env.production,
+							components: [row]
+						}
+					)
+				})
+			} else if (i.customId == 'cancel') {
+				let embedded = new MessageEmbed()
+					.setTitle(`Backup was cancelled`)
+					.setFooter({ text: `Commit ${rev}`})
+					.setTimestamp()
+				await interaction.editReply(
+					{
+						embeds: [embedded],
+						ephemeral: process.env.production,
+						components: [row]
+					}
+				)
+				
+			}
+
+			await i.deferUpdate()
+		});
+
+	},
+};

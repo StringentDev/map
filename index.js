@@ -26,5 +26,21 @@ Commit ${revision}
 console.log(" - Deploying commands")
 require("./appdata/deploy.js")
 
-console.log(" - Bootstrapping")
-require("./appdata/app.js")
+console.log(" - Activating Keepalive")
+
+const express = require("express")
+const app = express()
+
+app.get("*", (req, res) => {
+	res.send(`${process.uptime()}`)
+})
+
+app.listen(3000, () => {
+  console.log(" - Bootstrapping")
+	const { ShardingManager } = require('discord.js');
+	const manager = new ShardingManager('./appdata/app.js', { token: process.env.token });
+	
+	manager.on('shardCreate', shard => console.log(` - Launched shard ${shard.id}`));
+	
+	manager.spawn();
+})
