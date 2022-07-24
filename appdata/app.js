@@ -6,13 +6,15 @@ const { Client, Collection, Intents } = require('discord.js');
 const { token, clientId } = require('./config.js');
 const spawner = require('child_process').execSync
 
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
+const user_m = new Map();
 
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 const revision = spawner('git rev-parse HEAD').toString().trim()
+
 
 
 for (const file of commandFiles) {
@@ -38,6 +40,13 @@ client.once('ready', () => {
 	client.user.setStatus('online');
 	console.log(' - Rearing to go');
 });
+
+client.on('messageCreate', async message => {
+	if (message.author.bot) return;
+
+	if (user_m.has(message.author.id)) {
+	}
+})
 
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
